@@ -1,5 +1,14 @@
 package org.jmxtrans.agent;
 
+import org.jmxtrans.agent.AbstractOutputWriter;
+import org.jmxtrans.agent.util.ConfigurationUtils;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.io.IOException;
+
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
@@ -9,35 +18,44 @@ import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
 import software.amazon.awssdk.services.cloudwatch.model.CloudWatchException;
 
-
 public class CloudWatchOutputWriter extends AbstractOutputWriter {
 
-    CloudWatchClient client = CloudWatchClient.create();
-    private final String configNamespace = ConfigurationUtils.getString(settings, "namespace", "JMX");
-    private final String configDimensions = ConfigurationUtils.getString(settings, "dimensions", "");
+    private CloudWatchClient client;
+    private String configNamespace;
+    private String configDimensions;
     /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
-    private final List<Tag> listOfDimensions = Tag.tagsFromCommaSeparatedString(configDimensions);
-    private List<Dimension> dimensions = new ArrayList<>();
+    private List<Tag> listOfDimensions;
+    private Collection<Dimension> dimensions;
 
-    for (Tag thisDimension : listOfDimensions) {
-        dimensions.add(new Dimension().withName(thisDimension.getName()).withValue(thisDimension.getvalue()));
+    @Override
+    public void postConstruct(Map<String, String> settings) {
+        client = CloudWatchClient.builder().build();
+        configNamespace = ConfigurationUtils.getString(settings, "namespace", "JMX");
+        configDimensions = ConfigurationUtils.getString(settings, "dimensions", "");
+        /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
+        listOfDimensions = Tag.tagsFromCommaSeparatedString(configDimensions);
+
+        for(Tag thisDimension : listOfDimensions) {
+            dimensions.add(Dimension.builder().name(thisDimension.getName()).value(thisDimension.getValue()).build());
+        }
     }
 
     @Override
-    public void writeQueryResult(@Nonnull String name, @Nullable String type, @Nullable Object value) {
+    public void writeQueryResult(String name, String type, Object value) {
         /* Do not use variable 'type'.  It is only set with a "invocation" (instead of a "query"), but the documentation only mentions "query" */
+        Double doubleValue;
 
         if (value instanceof Number) {
-            value = value.doubleValue()
+            doubleValue = (Double) value;
         } else {
-            return
+            return;
         }
 
         try {
             MetricDatum datum = MetricDatum.builder()
                 .metricName(name)
                 .unit(StandardUnit.NONE)
-                .value(value)
+                .value(doubleValue)
                 .dimensions(dimensions).build();
 
             PutMetricDataRequest request = PutMetricDataRequest.builder()
@@ -52,7 +70,7 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
     }
 
     @Override
-    public void writeInvocationResult(@Nonnull String invocationName, @Nullable Object value) throws IOException {
+    public void writeInvocationResult(String invocationName, Object value) throws IOException {
         writeQueryResult(invocationName, null, value);
     }
 

@@ -368,6 +368,13 @@ tomcat.bytesReceived 0
 application.activeSessions 0
 ```
 
+# Building
+
+```
+mvn compile
+mvn package
+```
+
 
 # Release Notes
 
