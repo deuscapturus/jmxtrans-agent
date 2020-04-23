@@ -21,7 +21,6 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
     private CloudWatchAsyncClient client;
     private String configNamespace;
     private String configDimensions;
-    /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
     private List<Tag> listOfDimensions;
     private Collection<Dimension> dimensions;
 
@@ -31,16 +30,13 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
         client = CloudWatchAsyncClient.create();
         configNamespace = ConfigurationUtils.getString(settings, "namespace", "JMX");
         configDimensions = ConfigurationUtils.getString(settings, "dimensions", "");
-        /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
         listOfDimensions = Tag.tagsFromCommaSeparatedString(configDimensions);
 
-        logger.log(getInfoLevel(), "listOfDimensions =" + configDimensions
-        + ", listOfDimensions=" + listOfDimensions);
+        dimensions = new ArrayList<Dimension>();
 
-        /* FIXME
         for(Tag thisDimension : listOfDimensions) {
             dimensions.add(Dimension.builder().name(thisDimension.getName()).value(thisDimension.getValue()).build());
-        }*/
+        }
     }
 
     @Override
