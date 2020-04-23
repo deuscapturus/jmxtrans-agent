@@ -10,16 +10,15 @@ import java.util.Collection;
 import java.util.logging.Level;
 import java.io.IOException;
 
-import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.CloudWatchAsyncClient;
 import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
-import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataResponse;
 import software.amazon.awssdk.services.cloudwatch.model.CloudWatchException;
 
 public class CloudWatchOutputWriter extends AbstractOutputWriter {
 
-    private CloudWatchClient client;
+    private CloudWatchAsyncClient client;
     private String configNamespace;
     private String configDimensions;
     /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
@@ -29,7 +28,7 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
     @Override
     public void postConstruct(Map<String, String> settings) {
 
-        client = CloudWatchClient.create();
+        client = CloudWatchAsyncClient.create();
         configNamespace = ConfigurationUtils.getString(settings, "namespace", "JMX");
         configDimensions = ConfigurationUtils.getString(settings, "dimensions", "");
         /* Use use Tag class to extract dimensions.  I don't know if Tag is in the right scope to work here. */
@@ -73,9 +72,7 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
                 .namespace(configNamespace)
                 .metricData(datum).build();
 
-            logger.log(Level.INFO, "request = " + request);
-            PutMetricDataResponse response = client.putMetricData(request);
-            logger.log(Level.INFO, "putMetricData response: " + response.toString());
+            client.putMetricData(request);
 
         } catch (CloudWatchException e) {
             logger.log(Level.SEVERE, e.awsErrorDetails().errorMessage());
