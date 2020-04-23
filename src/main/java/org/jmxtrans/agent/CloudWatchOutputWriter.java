@@ -41,17 +41,12 @@ public class CloudWatchOutputWriter extends AbstractOutputWriter {
 
     @Override
     public void writeQueryResult(String name, String type, Object value) {
-        /* Do not use variable 'type'.  It is only set with a "invocation" (instead of a "query"), but the documentation only mentions "query" */
 
         Double doubleValue;
 
         if (value instanceof Number) {
-            if (value instanceof Long) {
-                logger.log(Level.WARNING, "Cannot write result " + name + ". " + value + " because it is type Long.  TODO: Figure out how to case a java.lang.Object which is java.lang.Long as a Double.");
-                return;
-            } else {
-                doubleValue = (Double) value;
-            }
+            Number numberValue = (Number) value;
+            doubleValue = numberValue.doubleValue();
         } else {
             logger.log(Level.WARNING, "Cannot write result " + name + ". " + value + " is not a Number.");
             return;
